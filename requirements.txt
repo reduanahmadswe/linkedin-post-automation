@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+apscheduler
+requests
+python-dotenv
+pydantic
