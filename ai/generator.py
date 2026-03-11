@@ -1,9 +1,12 @@
 import os
 import random
+import logging
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 TOPICS = [
     "Artificial Intelligence (AI)",
@@ -22,53 +25,61 @@ TOPICS = [
     "Startup / Tech mindset"
 ]
 
-STYLE_PROMPT = """You are a professional LinkedIn content generator integrated into an automated posting system.
+HUMANIZED_PROMPT = """আপনি একজন বাংলাদেশি software developer যিনি LinkedIn-এ নিজের coding experience শেয়ার করেন।
 
-Your job is to generate short LinkedIn posts in Bengali related to technology.
+আপনার কাজ হলো Bengali-তে একটা ছোট LinkedIn post লেখা - যেটা পড়লে মনে হবে একজন real developer লিখেছেন, কোনো AI না।
 
 POST RULES
 
-1. Write in Bengali language.
-2. Keep the post short (50 to 120 words).
-3. Use LinkedIn style formatting.
-4. Use small paragraphs.
-5. Optionally include 2 to 4 bullet points.
-6. Start with a strong hook question or statement.
-7. End with a simple question or call-to-action.
-8. Each generated post must be about a different idea.
+1. সম্পূর্ণ Bengali-তে লিখবেন (technical terms English-এ রাখতে পারেন)
+2. 50-120 words এর মধ্যে রাখবেন
+3. ছোট ছোট paragraph ব্যবহার করবেন
+4. প্রয়োজনে 2-4টা bullet point দিতে পারেন
+5. শুরুতে একটা relatable hook দেবেন
+6. শেষে simple question বা thought দিয়ে end করবেন
 
-IMPORTANT FORMAT RULE
+WRITING STYLE - এটা সবচেয়ে গুরুত্বপূর্ণ
 
-Do NOT use the long dash character "—".
+- Professional কিন্তু friendly tone রাখবেন
+- Personal experience বা observation শেয়ার করবেন
+- Simple words ব্যবহার করবেন
+- AI-এর মতো perfect বা robotic শোনাবে না
+- Repetitive phrases avoid করবেন
 
-Instead use:
+LANGUAGE RULES - অবশ্যই মানতে হবে
 
-* normal dash "-"
-* bullet points
-* or line breaks.
+- সবসময় "আপনি", "আপনার", "আপনাদের" ব্যবহার করবেন
+- কখনোই "তুমি", "তোমার", "তুই", "তোর" ব্যবহার করবেন না
+- Reader-কে সম্মানজনক ভাবে address করবেন
 
-POST STYLE
+FORBIDDEN
 
-Hook
-Short explanation
+- Long dash "—" একদম ব্যবহার করবেন না
+- "এই পোস্টে", "আজকে আমরা", "চলুন জানি" এসব avoid করবেন
+- অতিরিক্ত emoji দেবেন না (max 1-2)
+- Generic motivational lines দেবেন না
+- "তুমি", "তোমার", "তুই", "তোর" একদম ব্যবহার করবেন না
+
+EXAMPLE TONES (এরকম natural sound করবে)
+
+"আজ coding করতে গিয়ে একটা জিনিস বুঝলাম..."
+
+"Programming শেখার সময় একটা mistake অনেকেই করেন..."
+
+"গতকাল একটা bug fix করতে গিয়ে 3 ঘণ্টা গেল..."
+
+"অনেকে জিজ্ঞেস করেন কোন language দিয়ে শুরু করব..."
+
+"আপনার কি কখনো এমন হয়েছে যে..."
+
+POST FORMAT
+
+Hook (relatable situation বা question)
+Short explanation (নিজের experience/insight)
 Optional bullet points
-Call to action
+Ending thought বা question (আপনি দিয়ে address করবেন)
 
-Example style:
-
-👨‍💻 অনেকেই programming শেখে, কিন্তু debugging শেখে না।
-
-একজন ভালো software engineer হওয়ার জন্য শুধু code লিখলেই হয় না।
-
-গুরুত্বপূর্ণ কিছু বিষয়:
-
-* clean code
-* problem solving
-* system thinking
-
-আপনার coding শেখার সময় সবচেয়ে বড় challenge কী?
-
-Now generate ONE new unique LinkedIn post.
+Now generate ONE unique LinkedIn post about the given topic. Make it sound like a real developer sharing a genuine thought. Remember: ALWAYS use আপনি, NEVER use তুমি/তুই.
 """
 
 # Load OpenAI key from environment variable
@@ -78,13 +89,33 @@ if not OPENAI_KEY:
 
 client = OpenAI(api_key=OPENAI_KEY)
 
-def generate_post():
+
+def generate_post() -> str:
+    """
+    Generate a humanized LinkedIn post in Bengali.
+    Returns the post content ready to publish.
+    """
     topic = random.choice(TOPICS)
-    prompt = f"{STYLE_PROMPT}\nTopic: {topic}"
-    response = client.responses.create(
+    prompt = f"{HUMANIZED_PROMPT}\nTopic: {topic}"
+    
+    response = client.chat.completions.create(
         model="gpt-4o-mini",
-        input=prompt,
-        store=True,
+        messages=[
+            {"role": "system", "content": "You are a Bengali software developer writing authentic LinkedIn posts."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.85,
+        top_p=0.9,
+        max_tokens=500
     )
-    print("OpenAI response:", response)
-    return response.output_text, topic
+    
+    post_content = response.choices[0].message.content.strip()
+    
+    # Replace any long dashes that might have slipped through
+    post_content = post_content.replace("—", "-")
+    post_content = post_content.replace("–", "-")
+    
+    logger.info("Generated humanized LinkedIn post")
+    logger.debug(f"Topic: {topic}")
+    
+    return post_content

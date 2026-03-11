@@ -17,7 +17,17 @@ def init_db():
     conn.commit()
     conn.close()
 
-def insert_post(content, status="pending"):
+def insert_post(content: str, status: str = "posted") -> int:
+    """
+    Insert a post into the database.
+    
+    Args:
+        content: The post content
+        status: Post status (posted, failed)
+    
+    Returns:
+        The post ID
+    """
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO posts (content, status, created_at) VALUES (?, ?, ?)",
@@ -27,17 +37,11 @@ def insert_post(content, status="pending"):
     conn.close()
     return post_id
 
-def get_post(post_id):
+def get_post(post_id: int):
+    """Get a post by ID."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM posts WHERE id=?", (post_id,))
     post = cursor.fetchone()
     conn.close()
     return post
-
-def update_post_status(post_id, status):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE posts SET status=? WHERE id=?", (status, post_id))
-    conn.commit()
-    conn.close()
