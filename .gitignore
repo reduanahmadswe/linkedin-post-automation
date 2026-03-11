@@ -43,3 +43,12 @@ env/
 # Database
 *.db
 *.sqlite3
+
+# Dev/test utility scripts (not needed in production)
+get_person_id.py
+get_linkedin_credentials.py
+migrate_db.py
+quick_test.py
+run_demo.py
+test_system.py
+services_old/
